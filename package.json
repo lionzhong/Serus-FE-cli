@@ -1,0 +1,37 @@
+{
+  "name": "serus-fe-cli",
+  "version": "1.0.0",
+  "description": "前端自用工作工具",
+  "main": "index.js",
+  "bin": {
+    "serus": "./bin/cmd.js"
+  },
+  "dependencies": {
+    "chalk": "^4.0.0",
+    "commander": "^5.1.0",
+    "eslint-config-google": "^0.14.0",
+    "http-proxy": "^1.18.0",
+    "koa": "^2.11.0",
+    "koa-proxies": "^0.11.0",
+    "koa-static": "^5.0.0",
+    "lodash": "^4.17.15",
+    "md5": "^2.2.1",
+    "moment": "^2.25.3"
+  },
+  "devDependencies": {
+    "eslint": "^7.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lionzhong/Serus-FE-cli.git"
+  },
+  "author": "lionzhong",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lionzhong/Serus-FE-cli/issues"
+  },
+  "homepage": "https://github.com/lionzhong/Serus-FE-cli#readme"
+}
