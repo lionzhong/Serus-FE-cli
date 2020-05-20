@@ -44,7 +44,7 @@ const $proxy = (opt, rules) => {
         const apiPath = Object.keys(rules).sort(apiSortCall);
 
         apiPath.forEach(function (path) {
-            const rule =  _.clone(rules[path]);
+            const rule =  proxyGenerator(opt, _.clone(rules[path]));
             let ruleExtraProxyOpts = {};
 
             // 规则是否存在独立的配置
@@ -53,7 +53,6 @@ const $proxy = (opt, rules) => {
                 delete rule.extraProxyOpts;
             }
 
-            console.log(6);
             app.use(proxy(path, Object.assign({}, rule, extendOpts(opt, rule, ruleExtraProxyOpts))));
         });
     }
@@ -89,15 +88,14 @@ function resSendMock (opt, rules) {
             try {
                 ctx.req.addListener("data", (data) => {
                     postData += data;
-                    console.log(1, postData);
-                    resolve(postData);
+                    // console.log(1, postData);
                 });
                 ctx.req.addListener("end", () => {
-                    console.log(2, postData);
+                    // console.log(2, postData);
                     resolve(postData);
                 });
             } catch (e) {
-                console.log("err");
+                console.log(e);
                 reject(e);
             }
         });
@@ -116,18 +114,21 @@ function resSendMock (opt, rules) {
             ruleExtraProxyOpts = {};
         }
 
-        if (["POST", "PUT"].includes(ctx.req.method)) {
-            param = getPostParam(ctx);
-            console.log(3, param);
-        } else {
-            param = ctx.request.query;
-        }
-
         if (ruleExtraProxyOpts.local || (opt.local && [undefined, true].includes(ruleExtraProxyOpts.local))) {
-            ctx.body = mock.getMockData((!url ? ctx.path : url), ctx.req.method, opt.name, param);
-            console.log(4);
+            if (["POST", "PUT"].includes(ctx.req.method)) {
+                param = await getPostParam(ctx);
+
+                try {
+                    param = JSON.parse(param);
+                } catch (error) {
+                    param = {};
+                }
+            } else {
+                param = ctx.request.query;
+            }
+
+            ctx.body = mock.getMockData(ctx.path, ctx.req.method, opt.name, param);
         } else {
-            console.log(5);
             await next();
         }
     };
@@ -179,7 +180,7 @@ function extendOpts (opt, rule, extraProxyOpt = {}) {
                             params = querystring.parse(_targetUrl.searchParams.toString());
                         } else {
                             try {
-                                params = JSON.parse(postParams);
+                                params = postParams === "" ? {} : JSON.parse(postParams);
                             } catch (error) {
                                 params = postParams;
                             }
@@ -235,7 +236,6 @@ function proxyGenerator (opt, userSet = {}) {
         "extraProxyOpts": {}
     };
 
-    // console.log("userSet", Object.assign({}, defaultKoaProxySet, userSet));
     return Object.assign({}, defaultKoaProxySet, userSet);
 }
 

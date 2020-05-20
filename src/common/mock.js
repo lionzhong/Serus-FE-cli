@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
-
+const _ = require("lodash");
 const util = require("./util");
 const log = require("./log");
 const chalk = require("chalk");
@@ -124,15 +124,17 @@ const mock = {
 
         if (map[name] && map[name][url]) {
             const mock = map[name][url].find(mockOpt => {
-                return mockOpt.method === method && JSON.stringify(mockOpt.params) === JSON.stringify(params);
+                return mockOpt.method === method && _.isEqual(mockOpt.params, params);
             });
-            const fullPath = path.resolve(path.join($path.mockFolder, mock.mockFile));
 
             if (mock) {
-                log.time(`- ${method} ${url} load mock from -> ${chalk.green(fullPath)}`);
-            }
+                const fullPath = path.resolve(path.join($path.mockFolder, mock.mockFile));
 
-            return mock ? util.tryParseJson(fs.readFileSync(fullPath, "utf8")) : Object.assign({}, defaultData, { notMatchMockFile: true });
+                log.time(`- ${method} ${url} load mock from -> ${chalk.green(fullPath)}`);
+                return util.tryParseJson(fs.readFileSync(fullPath, "utf8"));
+            } else {
+                return Object.assign({}, defaultData, { notMatchMockFile: true });
+            }
         } else {
             return Object.assign({}, defaultData, { noMockData: true });
         }
