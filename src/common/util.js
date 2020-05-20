@@ -221,6 +221,16 @@ const util = {
             fs.writeFileSync(`${path}`, JSON.stringify(data, null, 4));
         },
 
+        tryToJson: (path, data) => {
+            try {
+                data = JSON.stringify(data, null, 4);
+            } catch (error) {
+                console.log("");
+            }
+
+            fs.writeFileSync(`${path}`, data);
+        },
+
         config: data => {
             util.output.json(path.join(util.folder.getRoot(), "config.json"), data);
         }
@@ -239,19 +249,6 @@ const util = {
         availableArr: data => {
             return Array.isArray(data) && data.length > 0;
         }
-    },
-
-    getSvnParams: () => {
-        const config = util.getConfig();
-        const params = {};
-
-        Object.keys(config.svn.params).forEach(key => {
-            if (config.svn.params[key] !== "") {
-                params[key] = config.svn.params[key];
-            }
-        });
-
-        return params;
     },
 
     getConfig: () => {
@@ -290,6 +287,14 @@ const util = {
         }
 
         return result;
+    },
+
+    tryParseJson: data => {
+        try {
+            return JSON.parse(data);
+        } catch (error) {
+            return data;
+        }
     }
 
 };
