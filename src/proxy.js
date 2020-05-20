@@ -106,12 +106,12 @@ function resSendMock (opt, rules) {
         let param = {};
 
         try {
-            ruleExtraProxyOpts = rules[url].extraProxyOpts;
+            ruleExtraProxyOpts = rules[url].extraProxyOpts || {};
         } catch (error) {
             ruleExtraProxyOpts = {};
         }
 
-        if (ruleExtraProxyOpts.local || (opt.local && [undefined, true].includes(ruleExtraProxyOpts.local))) {
+        if (ruleExtraProxyOpts.local === true || (opt.local === true && [undefined, true].includes(ruleExtraProxyOpts.local))) {
             if (["POST", "PUT"].includes(ctx.req.method)) {
                 param = await getPostParam(ctx);
 
@@ -147,6 +147,10 @@ function extendOpts (opt, rule, extraProxyOpt = {}) {
             },
             proxyReq (proxyReq, req, res) {
                 let data = "";
+
+                if (rule.header) {
+                    Object.keys(rule.header).forEach(key => proxyReq.setHeader(key, rule.header[key]));
+                }
 
                 req.on("data", (chunk) => {
                     data = chunk.toString();
@@ -225,13 +229,19 @@ function apiSortCall (a, b) {
 }
 
 function proxyGenerator (opt, userSet = {}) {
+    const keys = ["target", "header", "changeOrigin", "secure", "logs"];
     const defaultKoaProxySet = {
-        "target": opt.target,
         "changeOrigin": true,
         "secure": false,
         "logs": true,
         "extraProxyOpts": {}
     };
+
+    keys.forEach(key => {
+        if (opt[key]) {
+            defaultKoaProxySet[key] = opt[key];
+        }
+    });
 
     return Object.assign({}, defaultKoaProxySet, userSet);
 }
