@@ -41,7 +41,7 @@ const $proxy = (opt, rules) => {
         const apiPath = Object.keys(rules).sort(apiSortCall);
 
         apiPath.forEach(function (path) {
-            const rule =  proxyGenerator(opt, _.clone(rules[path]));
+            const rule = proxyGenerator(opt, _.clone(rules[path]));
             let ruleExtraProxyOpts = {};
 
             // 规则是否存在独立的配置
@@ -50,7 +50,16 @@ const $proxy = (opt, rules) => {
                 delete rule.extraProxyOpts;
             }
 
-            app.use(proxy(path, Object.assign({}, rule, extendOpts(opt, rule, ruleExtraProxyOpts))));
+            app.use(
+                proxy(
+                    path,
+                    Object.assign(
+                        {},
+                        rule,
+                        extendOpts(opt, rule, ruleExtraProxyOpts)
+                    )
+                )
+            );
         });
     }
 
@@ -64,9 +73,13 @@ const $proxy = (opt, rules) => {
             log.time("API Mock: ON ");
         }
 
-        Object.keys(rules).forEach(rule => {
+        Object.keys(rules).forEach((rule) => {
             console.log(chalk.gray(`Rule: ${rule}`));
-            console.log(chalk.gray("Rule Config: " + JSON.stringify(rules[rule], null, 4)));
+            console.log(
+                chalk.gray(
+                    "Rule Config: " + JSON.stringify(rules[rule], null, 4)
+                )
+            );
         });
     } catch (error) {
         console.log(error);
@@ -78,7 +91,7 @@ const $proxy = (opt, rules) => {
  * @param {object} opt - koa启动服务器的必要配置，例如，端口，项目名称，是否启用mock数据等
  * @param {object} rules - 用户自行配置的规则集合
  */
-function resSendMock (opt, rules) {
+function resSendMock(opt, rules) {
     const getPostParam = (ctx) => {
         const promise = new Promise((resolve, reject) => {
             let postData = "";
@@ -111,7 +124,11 @@ function resSendMock (opt, rules) {
             ruleExtraProxyOpts = {};
         }
 
-        if (ruleExtraProxyOpts.local === true || (opt.local === true && [undefined, true].includes(ruleExtraProxyOpts.local))) {
+        if (
+            ruleExtraProxyOpts.local === true ||
+            (opt.local === true &&
+                [undefined, true].includes(ruleExtraProxyOpts.local))
+        ) {
             if (["POST", "PUT"].includes(ctx.req.method)) {
                 param = await getPostParam(ctx);
 
@@ -124,7 +141,12 @@ function resSendMock (opt, rules) {
                 param = ctx.request.query;
             }
 
-            ctx.body = mock.getMockData(ctx.path, ctx.req.method, opt.name, param);
+            ctx.body = mock.getMockData(
+                ctx.path,
+                ctx.req.method,
+                opt.name,
+                param
+            );
         } else {
             await next();
         }
@@ -132,24 +154,26 @@ function resSendMock (opt, rules) {
 }
 
 /**
- * 
+ *
  * @param {object} opt - koa启动服务器的必要配置，例如，端口，项目名称，是否启用mock数据等
  * @param {object} rule - 用户自行配置的一条规则
  * @param {object} extraProxyOpt - 用户自定义配置规则中的代理额外配置，会覆盖项目的全局配置
  */
-function extendOpts (opt, rule, extraProxyOpt = {}) {
+function extendOpts(opt, rule, extraProxyOpt = {}) {
     let postParams;
 
     return {
         events: {
-            error (err, req, res) {
+            error(err, req, res) {
                 console.log(err);
             },
-            proxyReq (proxyReq, req, res) {
+            proxyReq(proxyReq, req, res) {
                 let data = "";
 
                 if (rule.header) {
-                    Object.keys(rule.header).forEach(key => proxyReq.setHeader(key, rule.header[key]));
+                    Object.keys(rule.header).forEach((key) =>
+                        proxyReq.setHeader(key, rule.header[key])
+                    );
                 }
 
                 req.on("data", (chunk) => {
@@ -159,7 +183,7 @@ function extendOpts (opt, rule, extraProxyOpt = {}) {
                     postParams = decodeURI(data);
                 });
             },
-            proxyRes (proxyRes, req, res) {
+            proxyRes(proxyRes, req, res) {
                 let body = [];
                 const extra = {
                     res: res,
@@ -172,40 +196,60 @@ function extendOpts (opt, rule, extraProxyOpt = {}) {
                 proxyRes.on("data", (chunk) => body.push(chunk));
                 proxyRes.on("end", () => {
                     // 没有启用本地模式，全局设置了保存mock数据，或规则中设置了额外的配置保存mock数据（覆盖全局）
-                    if (!opt.local && !extraProxyOpt.local && ((opt.mock && extraProxyOpt.mock === undefined) || extraProxyOpt.mock)) {
+                    if (
+                        !opt.local &&
+                        !extraProxyOpt.local &&
+                        ((opt.mock && extraProxyOpt.mock === undefined) ||
+                            extraProxyOpt.mock)
+                    ) {
                         const _targetUrl = new URL(`${rule.target}${req.url}`);
 
                         let params;
 
                         if (!["POST", "PUT"].includes(req.method)) {
-                            params = querystring.parse(_targetUrl.searchParams.toString());
+                            params = querystring.parse(
+                                _targetUrl.searchParams.toString()
+                            );
                         } else {
                             try {
-                                params = postParams === "" ? {} : JSON.parse(postParams);
+                                params =
+                                    postParams === ""
+                                        ? {}
+                                        : JSON.parse(postParams);
                             } catch (error) {
                                 params = postParams;
                             }
                         }
 
-                        if (![200, 301, 302].includes(res.statusCode) || !/^\/api\//.test(_targetUrl.pathname) || extraProxyOpt.mock === false) {
+                        if (
+                            ![200, 301, 302].includes(res.statusCode) ||
+                            !/^\/api\//.test(_targetUrl.pathname) ||
+                            extraProxyOpt.mock === false
+                        ) {
                             console.log("ignor storage mock data");
                             return;
                         }
 
                         switch (proxyRes.headers["content-encoding"]) {
-
                             case "gzip":
-                                zlib.gunzip(Buffer.concat(body), (err, data) => {
-                                    if (!err) {
-                                        mock.storage(_targetUrl, data, params, extra);
-                                    } else {
-                                        console.log(err);
+                                zlib.gunzip(
+                                    Buffer.concat(body),
+                                    (err, data) => {
+                                        if (!err) {
+                                            mock.storage(
+                                                _targetUrl,
+                                                data,
+                                                params,
+                                                extra
+                                            );
+                                        } else {
+                                            console.log(err);
+                                        }
                                     }
-                                });
+                                );
                                 break;
                             default:
                                 mock.storage(_targetUrl, body, params, extra);
-
                         }
                     }
                 });
@@ -214,7 +258,7 @@ function extendOpts (opt, rule, extraProxyOpt = {}) {
     };
 }
 
-function apiSortCall (a, b) {
+function apiSortCall(a, b) {
     if (a === b) {
         return 0;
     }
@@ -228,16 +272,16 @@ function apiSortCall (a, b) {
     }
 }
 
-function proxyGenerator (opt, userSet = {}) {
+function proxyGenerator(opt, userSet = {}) {
     const keys = ["target", "header", "changeOrigin", "secure", "logs"];
     const defaultKoaProxySet = {
-        "changeOrigin": true,
-        "secure": false,
-        "logs": true,
-        "extraProxyOpts": {}
+        changeOrigin: true,
+        secure: false,
+        logs: true,
+        extraProxyOpts: {}
     };
 
-    keys.forEach(key => {
+    keys.forEach((key) => {
         if (opt[key]) {
             defaultKoaProxySet[key] = opt[key];
         }

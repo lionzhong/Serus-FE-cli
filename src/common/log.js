@@ -1,23 +1,28 @@
-const chalk  = require("chalk");
+const chalk = require("chalk");
 const moment = require("moment");
 
 const log = {
-
     getTimeNow: () => {
-        return `[${moment(new Date().getTime()).format("YYYY-MM-DD HH:mm:ss")}]`;
+        return `[${moment(new Date().getTime()).format(
+            "YYYY-MM-DD HH:mm:ss"
+        )}]`;
     },
 
     done: (str) => {
-        console.log("=====================================================================");
+        console.log(
+            "====================================================================="
+        );
         console.log(` ${log.getTimeNow()} - ${str}`);
-        console.log("=====================================================================");
+        console.log(
+            "====================================================================="
+        );
         console.log("\n");
     },
 
     color: (str, color, time, op) => {
         str = time ? `${log.getTimeNow()} ${str}` : str;
 
-        console.log(chalk.bold[color](`${str}`), (op && op.blank) ? "\n" : "");
+        console.log(chalk.bold[color](`${str}`), op && op.blank ? "\n" : "");
     },
 
     green: (str, time, op) => {
@@ -54,11 +59,10 @@ const log = {
         }
         console.log(JSON.stringify(data, null, 2));
     },
-    
-    time: (str, op) => {
-        console.log(`${log.getTimeNow()} ${str}`, (op && op.blank) ? "\n" : "");
-    }
 
+    time: (str, op) => {
+        console.log(`${log.getTimeNow()} ${str}`, op && op.blank ? "\n" : "");
+    }
 };
 
 module.exports = log;

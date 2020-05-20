@@ -216,11 +216,11 @@ module.exports = {
                 ":": "before"
             }
         }],
-        "padded-blocks": ["error", {
-            "blocks": "never",
-            "switches": "always",
-            "classes": "always"
-        }],
+        // "padded-blocks": ["error", {
+        //     "blocks": "never",
+        //     "switches": "always",
+        //     "classes": "always"
+        // }],
         "prefer-promise-reject-errors": "error",
         "rest-spread-spacing": ["error", "never"],
         "semi": ["error", "always"],
@@ -229,7 +229,7 @@ module.exports = {
             "after": true
         }],
         "space-before-blocks": ["error", "always"],
-        "space-before-function-paren": ["error", "always"],
+        // "space-before-function-paren": ["error", "always"],
         "space-in-parens": ["error", "never"],
         "space-infix-ops": "error",
         "space-unary-ops": ["error", {

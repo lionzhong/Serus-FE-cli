@@ -3,11 +3,10 @@ const moment = require("moment");
 const log = require("./log");
 const path = require("path");
 
-const configFile  = "serus-config.json";
+const configFile = "serus-config.json";
 
 const util = {
     folder: {
-
         create: (path, sync = false, tip = false) => {
             if (sync === true) {
                 if (!fs.existsSync(path)) {
@@ -19,32 +18,38 @@ const util = {
                     }
                 } else {
                     if (tip === true) {
-                        console.log(`${util.getTimeNow()} 目录已存在：${path} `);
+                        console.log(
+                            `${util.getTimeNow()} 目录已存在：${path} `
+                        );
                         console.log("\n");
                     }
                 }
             } else {
                 if (!fs.existsSync(path)) {
-                    fs.mkdir(path, err => {
+                    fs.mkdir(path, (err) => {
                         if (tip === true) {
                             if (err) {
                                 console.error(err);
                                 console.log("\n");
                             } else {
-                                log.green(`${util.getTimeNow()} 目录创建成功：${path}`);
+                                log.green(
+                                    `${util.getTimeNow()} 目录创建成功：${path}`
+                                );
                             }
                         }
                     });
                 } else {
                     if (tip === true) {
-                        console.log(`${util.getTimeNow()} 目录已存在：${path} `);
+                        console.log(
+                            `${util.getTimeNow()} 目录已存在：${path} `
+                        );
                     }
                 }
             }
         },
 
         createConfig: async (tip = false) => {
-            const create = path => {
+            const create = (path) => {
                 return new Promise((resolve, reject) => {
                     fs.mkdir(path, {}, (err) => {
                         if (!err) {
@@ -66,11 +71,15 @@ const util = {
                 });
             };
 
-            const doMkdir = folderPath => {
+            const doMkdir = (folderPath) => {
                 return new Promise((resolve) => {
                     if (!fs.existsSync(folderPath)) {
                         if (tip) {
-                            log.time(`路径不存在! ${path.normalize(folderPath)} 开始创建路径`);
+                            log.time(
+                                `路径不存在! ${path.normalize(
+                                    folderPath
+                                )} 开始创建路径`
+                            );
                         }
 
                         const root = path.parse(folderPath).root;
@@ -86,18 +95,20 @@ const util = {
                             if (!fs.existsSync(currentPath)) {
                                 await create(currentPath);
 
-                                if (index === (folders.length - 1)) {
+                                if (index === folders.length - 1) {
                                     resolve();
                                 }
                             } else {
-                                if (index >= (folders.length - 1)) {
+                                if (index >= folders.length - 1) {
                                     resolve();
                                 }
                             }
                         });
                     } else {
                         if (tip) {
-                            log.time(`路径已存在! ${path.normalize(folderPath)}`);
+                            log.time(
+                                `路径已存在! ${path.normalize(folderPath)}`
+                            );
                         }
                         resolve();
                     }
@@ -115,12 +126,15 @@ const util = {
         },
 
         getProjectPath: (config = {}) => {
-            config = Object.keys(config).length === 0 ? util.getConfig() : config;
+            config =
+                Object.keys(config).length === 0 ? util.getConfig() : config;
 
             let result = {};
-            Object.keys(config.svn.folder).forEach(key => {
+            Object.keys(config.svn.folder).forEach((key) => {
                 if (key !== "project") {
-                    result[key] = path.normalize(path.join(config.svn.folder.project, key));
+                    result[key] = path.normalize(
+                        path.join(config.svn.folder.project, key)
+                    );
                 } else {
                     result[key] = config.svn.folder[key];
                 }
@@ -132,17 +146,19 @@ const util = {
         getRoot: () => {
             return process.cwd();
         }
-
     },
 
-    getRegion: (setting = false, defaultVal = false, splite = "_") => util.getDataType(setting, "object") && util.getDataType(setting.region, "string") ? `${splite}${setting.region}` : defaultVal,
+    getRegion: (setting = false, defaultVal = false, splite = "_") =>
+        util.getDataType(setting, "object") &&
+        util.getDataType(setting.region, "string")
+            ? `${splite}${setting.region}`
+            : defaultVal,
 
     getDataType: (data, type) => {
         let result = false;
         const getType = () => Object.prototype.toString.call(data);
 
         switch (type) {
-
             case "object":
                 result = getType() === "[object Object]";
                 break;
@@ -158,7 +174,6 @@ const util = {
             case "undefined":
                 result = getType() === "[object Undefined]";
                 break;
-                
         }
 
         return result;
@@ -177,7 +192,7 @@ const util = {
 
         let cut = util.repeatStr("=", 60);
 
-        [cut, ` ${str}`, cut, "\n"].forEach(temp => log[color](temp));
+        [cut, ` ${str}`, cut, "\n"].forEach((temp) => log[color](temp));
     },
 
     parseObjField: (key, obj) => {
@@ -195,12 +210,13 @@ const util = {
 
     sortArrByName: (arr, field) => {
         arr.sort((a, b) => {
-            let [
-                nameA,
-                nameB
-            ] = [
-                field ? util.parseObjField(field, a).toUpperCase() : a.toUpperCase(),
-                field ? util.parseObjField(field, b).toUpperCase() : b.toUpperCase()
+            let [nameA, nameB] = [
+                field
+                    ? util.parseObjField(field, a).toUpperCase()
+                    : a.toUpperCase(),
+                field
+                    ? util.parseObjField(field, b).toUpperCase()
+                    : b.toUpperCase()
             ];
 
             if (nameA < nameB) {
@@ -231,22 +247,27 @@ const util = {
             fs.writeFileSync(`${path}`, data);
         },
 
-        config: data => {
-            util.output.json(path.join(util.folder.getRoot(), "config.json"), data);
+        config: (data) => {
+            util.output.json(
+                path.join(util.folder.getRoot(), "config.json"),
+                data
+            );
         }
     },
 
     array: {
         includes: (data, target) => {
-            return Array.isArray(data) && data.length > 0 && data.includes(target);
+            return (
+                Array.isArray(data) && data.length > 0 && data.includes(target)
+            );
         }
     },
 
     val: {
-        inavailableArr: data => {
+        inavailableArr: (data) => {
             return !Array.isArray(data) || data.length <= 0;
         },
-        availableArr: data => {
+        availableArr: (data) => {
             return Array.isArray(data) && data.length > 0;
         }
     },
@@ -255,7 +276,9 @@ const util = {
         const program = require("commander");
         program.parse(process.argv);
 
-        const configPath = program.config ? path.normalize(program.config) : path.join(process.cwd(), "serus-config.json");
+        const configPath = program.config
+            ? path.normalize(program.config)
+            : path.join(process.cwd(), "serus-config.json");
 
         if (fs.existsSync(configPath)) {
             return JSON.parse(fs.readFileSync(configPath));
@@ -289,14 +312,13 @@ const util = {
         return result;
     },
 
-    tryParseJson: data => {
+    tryParseJson: (data) => {
         try {
             return JSON.parse(data);
         } catch (error) {
             return data;
         }
     }
-
 };
 
 module.exports = util;
