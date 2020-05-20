@@ -101,7 +101,7 @@ function resSendMock (opt, rules) {
     };
 
     return async (ctx, next) => {
-        const url = Object.keys(rules).find($path => $path === ctx.path);
+        const url = Object.keys(rules).find(($path) => $path === ctx.path);
         let ruleExtraProxyOpts;
         let param = {};
 
