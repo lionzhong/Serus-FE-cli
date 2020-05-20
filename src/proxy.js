@@ -37,9 +37,6 @@ const $proxy = (opt, rules) => {
     if (util.getDataType(rules, "object") && Object.keys(rules).length > 0) {
         // 判断是否需要加载本地数据
         app.use(resSendMock(opt, rules));
-        // app.use(async (ctx, next) => {
-        //     ctx.body = "OK";
-        // });
 
         const apiPath = Object.keys(rules).sort(apiSortCall);
 
