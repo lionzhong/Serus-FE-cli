@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
+const CryptoJS = require("crypto-js");
 const _ = require("lodash");
 const util = require("./util");
 const log = require("./log");
@@ -41,7 +42,7 @@ const mock = {
     },
 
     /**
-     *
+     * 写入mock数据，根据API，req.method，入参来数据生成hash值，并以此hash值来判断是否需要写入数据
      * @param {URL} __url - node URL对象
      * @param {object} data - 需要保存的mock数据
      * @param {object} params - 请求参数
@@ -50,13 +51,26 @@ const mock = {
     storage(__url, data, params, extra) {
         const apiPath = __url.pathname;
         const mock = this.init();
-        const map = JSON.parse(fs.readFileSync(mock.mapPath));
         const ignorKey = ["random"];
+        const map = JSON.parse(fs.readFileSync(mock.mapPath));
+        let mockFileName = `${uuidv4()}.json`;
 
         ignorKey.forEach((key) => (params[key] ? delete params[key] : ""));
 
-        let writeMap = true;
-        let mockFileName = `${uuidv4()}.json`;
+        let hashSource = {
+            url: apiPath,
+            method: extra.req.method,
+            params: params,
+            data: data.toString()
+        };
+
+        ["params", "data"].forEach(key => {
+            if (["[object Object]", "[object Array]"].includes(Object.prototype.toString.call(hashSource[key]))) {
+                hashSource[key] = JSON.stringify(hashSource[key]);
+            }
+        });
+
+        const hash = CryptoJS.SHA1(JSON.stringify(hashSource)).toString();
 
         if (!map[extra.opt.name] || !map[extra.opt.name][apiPath]) {
             if (!map[extra.opt.name]) {
@@ -67,10 +81,12 @@ const mock = {
                 {
                     method: extra.req.method,
                     params: params,
+                    hash: hash,
                     mockFile: mockFileName
                 }
             ];
         } else {
+            // 找出相同接口，相同req.method，相同入参的接口
             const index = map[extra.opt.name][apiPath].findIndex(
                 (mock) =>
                     mock.method === extra.req.method &&
@@ -78,33 +94,40 @@ const mock = {
             );
 
             if (index > -1) {
+                // 如果已有数据hash跟现有一致时，不再写入数据
+                if (map[extra.opt.name][apiPath][index].hash === hash) {
+                    log.time(`- ${extra.req.method} ${apiPath} ${chalk.blue("Hash duplicate, ignor storage mock data.")}`);
+                    return;
+                }
                 mockFileName = map[extra.opt.name][apiPath][index].mockFile;
-                writeMap = false;
             } else {
                 map[extra.opt.name][apiPath].push({
                     method: extra.req.method,
                     params: params,
+                    hash: hash,
                     mockFile: mockFileName
                 });
             }
         }
 
-        const fullPath = path.resolve(path.join(mock.mockFolder, mockFileName));
+        const projectMockFoder = path.join(mock.mockFolder, CryptoJS.SHA1(extra.opt.name).toString());
+
+        if (!fs.existsSync(projectMockFoder)) {
+            fs.mkdirSync(projectMockFoder);
+        }
+
+        const fullPath = path.resolve(path.join(projectMockFoder, mockFileName));
 
         util.output.tryToJson(fullPath, data.toString());
 
         log.time(
-            `- ${extra.req.method} ${apiPath} mock to -> ${chalk.green(
-                fullPath
-            )}`
+            `- ${extra.req.method} ${apiPath} ${chalk.green("mock to ->")} ${fullPath}`
         );
 
-        if (writeMap) {
-            util.output.tryToJson(path.resolve(mock.mapPath), map);
-            log.time(
-                `Mock map updated -> ${chalk.green(path.resolve(mock.mapPath))}`
-            );
-        }
+        util.output.tryToJson(path.resolve(mock.mapPath), map);
+        log.time(
+            `${(chalk.green("Mock map updated ->"))} ${path.resolve(mock.mapPath)}`
+        );
     },
 
     getMapFile() {
@@ -123,13 +146,14 @@ const mock = {
         if (!url || !method) {
             return;
         }
-        const [$path, map, defaultData] = [
+        const [$path, map, defaultData, proxyNameHash] = [
             this.init(),
             this.getMapFile(),
             {
                 status: 2000,
                 result: {}
-            }
+            },
+            CryptoJS.SHA1(name).toString()
         ];
 
         if (map[name] && map[name][url]) {
@@ -142,13 +166,11 @@ const mock = {
 
             if (mock) {
                 const fullPath = path.resolve(
-                    path.join($path.mockFolder, mock.mockFile)
+                    path.join($path.mockFolder, proxyNameHash, mock.mockFile)
                 );
 
                 log.time(
-                    `- ${method} ${url} load mock from -> ${chalk.green(
-                        fullPath
-                    )}`
+                    `- ${method} ${url} ${(chalk.green("load mock from ->"))} ${fullPath}`
                 );
                 return util.tryParseJson(fs.readFileSync(fullPath, "utf8"));
             } else {

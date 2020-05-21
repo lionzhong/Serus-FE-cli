@@ -62,6 +62,26 @@ const log = {
 
     time: (str, op) => {
         console.log(`${log.getTimeNow()} ${str}`, op && op.blank ? "\n" : "");
+    },
+
+    bgGreen: (str, time = false) => {
+        const $log = (str) => console.log(chalk.bgGreen(chalk.black(str)));
+
+        if (Array.isArray(str)) {
+            let maxLength = 0;
+
+            str.forEach(($str) => {
+                if ($str.length > maxLength) {
+                    maxLength = $str.length;
+                }
+            });
+
+            str.forEach(($str) => {
+                $log(`${$str}${" ".repeat(maxLength - $str.length)}`);
+            });
+        } else {
+            $log(time ? `${log.getTimeNow()} ${str}` : str);
+        }
     }
 };
 

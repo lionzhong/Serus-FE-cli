@@ -66,20 +66,28 @@ const $proxy = (opt, rules) => {
     try {
         app.listen(opt.listen);
 
-        log.time(chalk.green(`Proxy Success "${opt.name}" `));
-        log.time(`Proxy Port ${opt.listen} `);
+        const tips = [
+            "       Proxy enabled success!",
+            "======================================",
+            ` Name: ${opt.name}`,
+            ` Port: ${opt.listen}`,
+            ` Url : http://localhost:${opt.listen}/`
+        ];
+
+        // console.log(chalk.bgGreen(chalk.black("Proxy enabled success!  ")));
+        // console.log(chalk.bgGreen(chalk.black(`Name: ${opt.name}       `)));
+        // console.log(chalk.bgGreen(chalk.black(`Port: ${opt.listen}              `)));
 
         if (opt.mock === true) {
-            log.time("API Mock: ON ");
+            tips.push(" API Storage: ON ");
+            // log.blue("API Storage: ON ", false);
         }
 
+        log.bgGreen(tips);
+
         Object.keys(rules).forEach((rule) => {
-            console.log(chalk.gray(`Rule: ${rule}`));
-            console.log(
-                chalk.gray(
-                    "Rule Config: " + JSON.stringify(rules[rule], null, 4)
-                )
-            );
+            log.blue(`Rule: ${rule}`, false);
+            log.blue(`Rule Config: ${JSON.stringify(rules[rule], null, 4)}`, false);
         });
     } catch (error) {
         console.log(error);
@@ -277,7 +285,15 @@ function proxyGenerator(opt, userSet = {}) {
     const defaultKoaProxySet = {
         changeOrigin: true,
         secure: false,
-        logs: true,
+        logs: (ctx, target) => {
+            console.log(
+                `%s - %s %s ${chalk.green("proxy to ->")} %s`,
+                log.getTimeNow(),
+                ctx.req.method,
+                ctx.req.oldPath,
+                new URL(ctx.req.url, target)
+            );
+        },
         extraProxyOpts: {}
     };
 

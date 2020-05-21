@@ -9,6 +9,7 @@
     "dependencies": {
         "chalk": "^4.0.0",
         "commander": "^5.1.0",
+        "crypto-js": "^4.0.0",
         "eslint-config-google": "^0.14.0",
         "http-proxy": "^1.18.1",
         "koa": "^2.11.0",
