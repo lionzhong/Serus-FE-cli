@@ -233,18 +233,42 @@ const util = {
     },
 
     output: {
-        json: (path, data) => {
-            fs.writeFileSync(`${path}`, JSON.stringify(data, null, 4));
+        json: async (path, data, async = false, successCall = null) => {
+            if (async) {
+                await fs.writeFile(
+                    `${path}`,
+                    JSON.stringify(data, null, 4),
+                    (err) => {
+                        if (err) throw err;
+
+                        if (successCall) {
+                            successCall();
+                        }
+                    }
+                );
+            } else {
+                fs.writeFileSync(`${path}`, JSON.stringify(data, null, 4));
+            }
         },
 
-        tryToJson: (path, data) => {
+        tryToJson: async (path, data, async = false, successCall = null) => {
             try {
                 data = JSON.stringify(data, null, 4);
             } catch (error) {
                 console.log("");
             }
 
-            fs.writeFileSync(`${path}`, data);
+            if (async) {
+                await fs.writeFile(`${path}`, data, (err) => {
+                    if (err) throw err;
+
+                    if (successCall) {
+                        successCall();
+                    }
+                });
+            } else {
+                fs.writeFileSync(`${path}`, data);
+            }
         },
 
         config: (data) => {
@@ -317,6 +341,20 @@ const util = {
             return JSON.parse(data);
         } catch (error) {
             return data;
+        }
+    },
+
+    openBrowser(url) {
+        var exec = require("child_process").exec;
+        switch (process.platform) {
+            case "darwin":
+                exec("open " + url);
+                break;
+            case "win32":
+                exec("start " + url);
+                break;
+            default:
+                exec("xdg-open", [url]);
         }
     }
 };

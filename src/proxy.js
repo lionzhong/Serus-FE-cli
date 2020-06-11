@@ -87,8 +87,16 @@ const $proxy = (opt, rules) => {
 
         Object.keys(rules).forEach((rule) => {
             log.blue(`Rule: ${rule}`, false);
-            log.blue(`Rule Config: ${JSON.stringify(rules[rule], null, 4)}`, false);
+            log.blue(
+                `Rule Config: ${JSON.stringify(rules[rule], null, 4)}`,
+                false
+            );
         });
+
+        if (opt.homepage) {
+            util.openBrowser(`http://localhost:${opt.listen}/${opt.homepage}`);
+        }
+
     } catch (error) {
         console.log(error);
     }

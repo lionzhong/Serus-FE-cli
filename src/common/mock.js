@@ -8,6 +8,15 @@ const log = require("./log");
 const chalk = require("chalk");
 const userSetting = util.getUsrConfig();
 
+const mockMap = {
+    data: {},
+    hash: ""
+};
+
+const getHashByStr = (data) => {
+    return CryptoJS.SHA1(JSON.stringify(data)).toString();
+};
+
 const mock = {
     mapJsonFileName: "serus_proxy_mock_map.json",
 
@@ -33,6 +42,10 @@ const mock = {
 
         if (!fs.existsSync(mapPath)) {
             util.output.json(mapPath, {});
+            mockMap.hash = getHashByStr(mockMap.data);
+        } else if (Object.keys(mockMap.data).length === 0) {
+            mockMap.data = JSON.parse(fs.readFileSync(mapPath), "utf8");
+            mockMap.hash = getHashByStr(mockMap.data);
         }
 
         return {
@@ -52,7 +65,7 @@ const mock = {
         const apiPath = __url.pathname;
         const mock = this.init();
         const ignorKey = ["random"];
-        const map = JSON.parse(fs.readFileSync(mock.mapPath));
+        const map = mockMap.data;
         let mockFileName = `${uuidv4()}.json`;
 
         ignorKey.forEach((key) => (params[key] ? delete params[key] : ""));
@@ -64,13 +77,17 @@ const mock = {
             data: data.toString()
         };
 
-        ["params", "data"].forEach(key => {
-            if (["[object Object]", "[object Array]"].includes(Object.prototype.toString.call(hashSource[key]))) {
+        ["params", "data"].forEach((key) => {
+            if (
+                ["[object Object]", "[object Array]"].includes(
+                    Object.prototype.toString.call(hashSource[key])
+                )
+            ) {
                 hashSource[key] = JSON.stringify(hashSource[key]);
             }
         });
 
-        const hash = CryptoJS.SHA1(JSON.stringify(hashSource)).toString();
+        const hash = getHashByStr(hashSource);
 
         if (!map[extra.opt.name] || !map[extra.opt.name][apiPath]) {
             if (!map[extra.opt.name]) {
@@ -96,7 +113,11 @@ const mock = {
             if (index > -1) {
                 // 如果已有数据hash跟现有一致时，不再写入数据
                 if (map[extra.opt.name][apiPath][index].hash === hash) {
-                    log.time(`- ${extra.req.method} ${apiPath} ${chalk.blue("Hash duplicate, ignor storage mock data.")}`);
+                    log.time(
+                        `- ${extra.req.method} ${apiPath} ${chalk.blue(
+                            "Ignor storage mock data, api response hash duplicated."
+                        )}`
+                    );
                     return;
                 }
                 mockFileName = map[extra.opt.name][apiPath][index].mockFile;
@@ -110,24 +131,41 @@ const mock = {
             }
         }
 
-        const projectMockFoder = path.join(mock.mockFolder, CryptoJS.SHA1(extra.opt.name).toString());
+        const projectMockFoder = path.join(
+            mock.mockFolder,
+            CryptoJS.SHA1(extra.opt.name).toString()
+        );
 
         if (!fs.existsSync(projectMockFoder)) {
             fs.mkdirSync(projectMockFoder);
         }
 
-        const fullPath = path.resolve(path.join(projectMockFoder, mockFileName));
-
-        util.output.tryToJson(fullPath, data.toString());
-
-        log.time(
-            `- ${extra.req.method} ${apiPath} ${chalk.green("mock to ->")} ${fullPath}`
+        const fullPath = path.resolve(
+            path.join(projectMockFoder, mockFileName)
         );
 
-        util.output.tryToJson(path.resolve(mock.mapPath), map);
-        log.time(
-            `${(chalk.green("Mock map updated ->"))} ${path.resolve(mock.mapPath)}`
-        );
+        util.output.tryToJson(fullPath, data.toString(), true, function () {
+            log.time(
+                `- ${extra.req.method} ${apiPath} ${chalk.green(
+                    "mock to ->"
+                )} ${fullPath}`
+            );
+        });
+
+        if (getHashByStr(map) !== mockMap.hash) {
+            util.output.tryToJson(path.resolve(mock.mapPath), map);
+
+            mockMap.hash = getHashByStr(map);
+            mockMap.data = map;
+
+            log.time(
+                `${chalk.green("Mock map updated ->")} ${path.resolve(
+                    mock.mapPath
+                )}`
+            );
+        } else {
+            log.time(chalk.blue("Ignor storage mock map, file hash duplicated."));
+        }
     },
 
     getMapFile() {
@@ -148,7 +186,7 @@ const mock = {
         }
         const [$path, map, defaultData, proxyNameHash] = [
             this.init(),
-            this.getMapFile(),
+            mockMap.data,
             {
                 status: 2000,
                 result: {}
@@ -170,7 +208,9 @@ const mock = {
                 );
 
                 log.time(
-                    `- ${method} ${url} ${(chalk.green("load mock from ->"))} ${fullPath}`
+                    `- ${method} ${url} ${chalk.green(
+                        "load mock from ->"
+                    )} ${fullPath}`
                 );
                 return util.tryParseJson(fs.readFileSync(fullPath, "utf8"));
             } else {
