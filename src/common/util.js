@@ -2,7 +2,7 @@ const fs = require("fs");
 const moment = require("moment");
 const log = require("./log");
 const path = require("path");
-
+const interfaces = require("os").networkInterfaces();
 const configFile = "serus-config.json";
 
 const util = {
@@ -356,6 +356,25 @@ const util = {
             default:
                 exec("xdg-open", [url]);
         }
+    },
+
+    getLocalIp() {
+        let IPAdress = "";
+        for (var devName in interfaces) {
+            var iface = interfaces[devName];
+            for (var i = 0; i < iface.length; i++) {
+                var alias = iface[i];
+                if (
+                    alias.family === "IPv4" &&
+                    alias.address !== "127.0.0.1" &&
+                    !alias.internal
+                ) {
+                    IPAdress = alias.address;
+                }
+            }
+        }
+
+        return IPAdress;
     }
 };
 

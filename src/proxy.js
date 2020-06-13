@@ -71,7 +71,7 @@ const $proxy = (opt, rules) => {
             "======================================",
             ` Name: ${opt.name}`,
             ` Port: ${opt.listen}`,
-            ` Url : http://localhost:${opt.listen}/`
+            ` Url : http://${util.getLocalIp()}:${opt.listen}/`
         ];
 
         // console.log(chalk.bgGreen(chalk.black("Proxy enabled success!  ")));
@@ -94,7 +94,7 @@ const $proxy = (opt, rules) => {
         });
 
         if (opt.homepage) {
-            util.openBrowser(`http://localhost:${opt.listen}/${opt.homepage}`);
+            util.openBrowser(`http://${util.getLocalIp()}:${opt.listen}/${opt.homepage}`);
         }
 
     } catch (error) {
