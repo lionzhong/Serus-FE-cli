@@ -65,7 +65,8 @@ const mock = {
         const apiPath = __url.pathname;
         const mock = this.init();
         const ignorKey = ["random"];
-        const map = mockMap.data;
+        const map = Object.assign({}, mockMap.data);
+        let apiInMapIndex = -1;
         let mockFileName = `${uuidv4()}.json`;
 
         ignorKey.forEach((key) => (params[key] ? delete params[key] : ""));
@@ -109,6 +110,7 @@ const mock = {
                     mock.method === extra.req.method &&
                     JSON.stringify(mock.params) === JSON.stringify(params)
             );
+            apiInMapIndex = index;
 
             if (index > -1) {
                 // 如果已有数据hash跟现有一致时，不再写入数据
@@ -118,6 +120,7 @@ const mock = {
                             "Ignor storage mock data, api response hash duplicated."
                         )}`
                     );
+                    // log.blue(`params: ${JSON.stringify(map[extra.opt.name][apiPath][index].params, null, 4)}\n\n`);
                     return;
                 }
                 mockFileName = map[extra.opt.name][apiPath][index].mockFile;
@@ -164,7 +167,9 @@ const mock = {
                 )}`
             );
         } else {
-            log.time(chalk.blue("Ignor storage mock map, file hash duplicated."));
+            log.time(
+                chalk.blue("Ignor storage mock map, file hash duplicated.")
+            );
         }
     },
 
