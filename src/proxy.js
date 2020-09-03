@@ -12,7 +12,6 @@ const log = require('./common/log');
 const mock = require('./common/mock');
 const fs = require('fs');
 const https = require('https');
-const http = require('http');
 
 /**
  * koa-proxies主函数，使用此函数可通过配置中启动代理服务器
