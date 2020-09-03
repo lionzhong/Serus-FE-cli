@@ -1,15 +1,18 @@
-const path = require("path");
-const zlib = require("zlib");
-const querystring = require("querystring");
-const chalk = require("chalk");
-const Koa = require("koa");
+const path = require('path');
+const zlib = require('zlib');
+const querystring = require('querystring');
+const chalk = require('chalk');
+const Koa = require('koa');
 const app = new Koa();
-const proxy = require("koa-proxies");
-const static = require("koa-static");
-const _ = require("lodash");
-const util = require("./common/util");
-const log = require("./common/log");
-const mock = require("./common/mock");
+const proxy = require('koa-proxies');
+const staticParser = require('koa-static');
+const _ = require('lodash');
+const util = require('./common/util');
+const log = require('./common/log');
+const mock = require('./common/mock');
+const fs = require('fs');
+const https = require('https');
+const http = require('http');
 
 /**
  * koa-proxies主函数，使用此函数可通过配置中启动代理服务器
@@ -17,24 +20,24 @@ const mock = require("./common/mock");
  * @param {object} rules - 用户自行配置的规则集合
  */
 const $proxy = (opt, rules) => {
-    let tip = "";
+    let tip = '';
 
     const regExpPort = /^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/;
 
     if (!regExpPort.test(opt.listen)) {
-        tip = "端口只能是大于0的整数";
+        tip = '端口只能是大于0的整数';
     }
 
-    if (tip !== "") {
+    if (tip !== '') {
         log.red(tip, true);
         return;
     }
 
     if (opt.static) {
-        app.use(static(path.resolve(opt.localStaticPath)));
+        app.use(staticParser(path.resolve(opt.localStaticPath)));
     }
 
-    if (util.getDataType(rules, "object") && Object.keys(rules).length > 0) {
+    if (util.getDataType(rules, 'object') && Object.keys(rules).length > 0) {
         // 判断是否需要加载本地数据
         app.use(resSendMock(opt, rules));
 
@@ -50,53 +53,52 @@ const $proxy = (opt, rules) => {
                 delete rule.extraProxyOpts;
             }
 
-            app.use(
-                proxy(
-                    path,
-                    Object.assign(
-                        {},
-                        rule,
-                        extendOpts(opt, rule, ruleExtraProxyOpts)
-                    )
-                )
-            );
+            app.use(proxy(path, Object.assign({}, rule, extendOpts(opt, rule, ruleExtraProxyOpts))));
         });
     }
 
+    const options = {
+        key: fs.readFileSync(path.resolve(__dirname, '../key/server.key')),
+        cert: fs.readFileSync(path.resolve(__dirname, '../key/server.cert'))
+    };
+
     try {
-        app.listen(opt.listen);
+        const protocal = opt.protocal === 'https' ? 'https' : 'http';
+
+        switch (protocal) {
+            case 'https':
+                https.createServer(options, app.callback()).listen(opt.listen);
+                break;
+            default:
+                app.listen(opt.listen, '127.0.0.1');
+                break;
+        }
+
+        const domain = opt.domain ? opt.domain : 'localhost';
 
         const tips = [
-            "       Proxy enabled success!",
-            "======================================",
+            '       Proxy enabled success!',
+            '======================================',
             ` Name: ${opt.name}`,
             ` Port: ${opt.listen}`,
-            ` Url : http://${util.getLocalIp()}:${opt.listen}/`
+            ` Url : ${protocal}://${domain}:${opt.listen}/`
         ];
 
-        // console.log(chalk.bgGreen(chalk.black("Proxy enabled success!  ")));
-        // console.log(chalk.bgGreen(chalk.black(`Name: ${opt.name}       `)));
-        // console.log(chalk.bgGreen(chalk.black(`Port: ${opt.listen}              `)));
-
         if (opt.mock === true) {
-            tips.push(" API Storage: ON ");
-            // log.blue("API Storage: ON ", false);
+            tips.push(' API Storage: ON ');
         }
 
         log.bgGreen(tips);
 
         Object.keys(rules).forEach((rule) => {
             log.blue(`Rule: ${rule}`, false);
-            log.blue(
-                `Rule Config: ${JSON.stringify(rules[rule], null, 4)}`,
-                false
-            );
+            log.blue(`Rule Config: ${JSON.stringify(rules[rule], null, 4)}`, false);
         });
 
         if (opt.homepage) {
-            util.openBrowser(`http://${util.getLocalIp()}:${opt.listen}/${opt.homepage}`);
+            const target = `${domain}:${opt.listen}/${opt.homepage}`;
+            util.openBrowser(`${protocal}://${target}`);
         }
-
     } catch (error) {
         console.log(error);
     }
@@ -110,13 +112,13 @@ const $proxy = (opt, rules) => {
 function resSendMock(opt, rules) {
     const getPostParam = (ctx) => {
         const promise = new Promise((resolve, reject) => {
-            let postData = "";
+            let postData = '';
             try {
-                ctx.req.addListener("data", (data) => {
+                ctx.req.addListener('data', (data) => {
                     postData += data;
                     // console.log(1, postData);
                 });
-                ctx.req.addListener("end", () => {
+                ctx.req.addListener('end', () => {
                     // console.log(2, postData);
                     resolve(postData);
                 });
@@ -142,10 +144,9 @@ function resSendMock(opt, rules) {
 
         if (
             ruleExtraProxyOpts.local === true ||
-            (opt.local === true &&
-                [undefined, true].includes(ruleExtraProxyOpts.local))
+            (opt.local === true && [undefined, true].includes(ruleExtraProxyOpts.local))
         ) {
-            if (["POST", "PUT"].includes(ctx.req.method)) {
+            if (['POST', 'PUT'].includes(ctx.req.method)) {
                 param = await getPostParam(ctx);
 
                 try {
@@ -157,12 +158,7 @@ function resSendMock(opt, rules) {
                 param = ctx.request.query;
             }
 
-            ctx.body = mock.getMockData(
-                ctx.path,
-                ctx.req.method,
-                opt.name,
-                param
-            );
+            ctx.body = mock.getMockData(ctx.path, ctx.req.method, opt.name, param);
         } else {
             await next();
         }
@@ -184,18 +180,16 @@ function extendOpts(opt, rule, extraProxyOpt = {}) {
                 console.log(err);
             },
             proxyReq(proxyReq, req, res) {
-                let data = "";
+                let data = '';
 
                 if (rule.header) {
-                    Object.keys(rule.header).forEach((key) =>
-                        proxyReq.setHeader(key, rule.header[key])
-                    );
+                    Object.keys(rule.header).forEach((key) => proxyReq.setHeader(key, rule.header[key]));
                 }
 
-                req.on("data", (chunk) => {
+                req.on('data', (chunk) => {
                     data = chunk.toString();
                 });
-                req.on("end", () => {
+                req.on('end', () => {
                     postParams = decodeURI(data);
                 });
             },
@@ -209,29 +203,23 @@ function extendOpts(opt, rule, extraProxyOpt = {}) {
                     opt: opt
                 };
 
-                proxyRes.on("data", (chunk) => body.push(chunk));
-                proxyRes.on("end", () => {
+                proxyRes.on('data', (chunk) => body.push(chunk));
+                proxyRes.on('end', () => {
                     // 没有启用本地模式，全局设置了保存mock数据，或规则中设置了额外的配置保存mock数据（覆盖全局）
                     if (
                         !opt.local &&
                         !extraProxyOpt.local &&
-                        ((opt.mock && extraProxyOpt.mock === undefined) ||
-                            extraProxyOpt.mock)
+                        ((opt.mock && extraProxyOpt.mock === undefined) || extraProxyOpt.mock)
                     ) {
                         const _targetUrl = new URL(`${rule.target}${req.url}`);
 
                         let params;
 
-                        if (!["POST", "PUT"].includes(req.method)) {
-                            params = querystring.parse(
-                                _targetUrl.searchParams.toString()
-                            );
+                        if (!['POST', 'PUT'].includes(req.method)) {
+                            params = querystring.parse(_targetUrl.searchParams.toString());
                         } else {
                             try {
-                                params =
-                                    postParams === ""
-                                        ? {}
-                                        : JSON.parse(postParams);
+                                params = postParams === '' ? {} : JSON.parse(postParams);
                             } catch (error) {
                                 params = postParams;
                             }
@@ -242,27 +230,19 @@ function extendOpts(opt, rule, extraProxyOpt = {}) {
                             !/^\/api\//.test(_targetUrl.pathname) ||
                             extraProxyOpt.mock === false
                         ) {
-                            console.log("ignor storage mock data");
+                            console.log('ignor storage mock data');
                             return;
                         }
 
-                        switch (proxyRes.headers["content-encoding"]) {
-                            case "gzip":
-                                zlib.gunzip(
-                                    Buffer.concat(body),
-                                    (err, data) => {
-                                        if (!err) {
-                                            mock.storage(
-                                                _targetUrl,
-                                                data,
-                                                params,
-                                                extra
-                                            );
-                                        } else {
-                                            console.log(err);
-                                        }
+                        switch (proxyRes.headers['content-encoding']) {
+                            case 'gzip':
+                                zlib.gunzip(Buffer.concat(body), (err, data) => {
+                                    if (!err) {
+                                        mock.storage(_targetUrl, data, params, extra);
+                                    } else {
+                                        console.log(err);
                                     }
-                                );
+                                });
                                 break;
                             default:
                                 mock.storage(_targetUrl, body, params, extra);
@@ -289,13 +269,13 @@ function apiSortCall(a, b) {
 }
 
 function proxyGenerator(opt, userSet = {}) {
-    const keys = ["target", "header", "changeOrigin", "secure", "logs"];
+    const keys = ['target', 'header', 'changeOrigin', 'secure', 'logs'];
     const defaultKoaProxySet = {
         changeOrigin: true,
         secure: false,
         logs: (ctx, target) => {
             console.log(
-                `%s - %s %s ${chalk.green("proxy to ->")} %s`,
+                `%s - %s %s ${chalk.green('proxy to ->')} %s`,
                 log.getTimeNow(),
                 ctx.req.method,
                 ctx.req.oldPath,

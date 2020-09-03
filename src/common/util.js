@@ -1,9 +1,9 @@
-const fs = require("fs");
-const moment = require("moment");
-const log = require("./log");
-const path = require("path");
-const interfaces = require("os").networkInterfaces();
-const configFile = "serus-config.json";
+const fs = require('fs');
+const moment = require('moment');
+const log = require('./log');
+const path = require('path');
+const interfaces = require('os').networkInterfaces();
+const configFile = 'serus-config.js';
 
 const util = {
     folder: {
@@ -14,14 +14,12 @@ const util = {
 
                     if (tip) {
                         log.green(`${util.getTimeNow()} 目录创建成功：${path}`);
-                        console.log("\n");
+                        console.log('\n');
                     }
                 } else {
                     if (tip === true) {
-                        console.log(
-                            `${util.getTimeNow()} 目录已存在：${path} `
-                        );
-                        console.log("\n");
+                        console.log(`${util.getTimeNow()} 目录已存在：${path} `);
+                        console.log('\n');
                     }
                 }
             } else {
@@ -30,19 +28,15 @@ const util = {
                         if (tip === true) {
                             if (err) {
                                 console.error(err);
-                                console.log("\n");
+                                console.log('\n');
                             } else {
-                                log.green(
-                                    `${util.getTimeNow()} 目录创建成功：${path}`
-                                );
+                                log.green(`${util.getTimeNow()} 目录创建成功：${path}`);
                             }
                         }
                     });
                 } else {
                     if (tip === true) {
-                        console.log(
-                            `${util.getTimeNow()} 目录已存在：${path} `
-                        );
+                        console.log(`${util.getTimeNow()} 目录已存在：${path} `);
                     }
                 }
             }
@@ -75,16 +69,12 @@ const util = {
                 return new Promise((resolve) => {
                     if (!fs.existsSync(folderPath)) {
                         if (tip) {
-                            log.time(
-                                `路径不存在! ${path.normalize(
-                                    folderPath
-                                )} 开始创建路径`
-                            );
+                            log.time(`路径不存在! ${path.normalize(folderPath)} 开始创建路径`);
                         }
 
                         const root = path.parse(folderPath).root;
 
-                        let folders = path.normalize(folderPath).split("\\");
+                        let folders = path.normalize(folderPath).split('\\');
 
                         folders.splice(0, 1);
 
@@ -106,9 +96,7 @@ const util = {
                         });
                     } else {
                         if (tip) {
-                            log.time(
-                                `路径已存在! ${path.normalize(folderPath)}`
-                            );
+                            log.time(`路径已存在! ${path.normalize(folderPath)}`);
                         }
                         resolve();
                     }
@@ -122,19 +110,16 @@ const util = {
                 await doMkdir(path.normalize(paths[key]));
             });
 
-            await doMkdir(path.join(paths.project, "debug"));
+            await doMkdir(path.join(paths.project, 'debug'));
         },
 
         getProjectPath: (config = {}) => {
-            config =
-                Object.keys(config).length === 0 ? util.getConfig() : config;
+            config = Object.keys(config).length === 0 ? util.getConfig() : config;
 
             let result = {};
             Object.keys(config.svn.folder).forEach((key) => {
-                if (key !== "project") {
-                    result[key] = path.normalize(
-                        path.join(config.svn.folder.project, key)
-                    );
+                if (key !== 'project') {
+                    result[key] = path.normalize(path.join(config.svn.folder.project, key));
                 } else {
                     result[key] = config.svn.folder[key];
                 }
@@ -148,9 +133,8 @@ const util = {
         }
     },
 
-    getRegion: (setting = false, defaultVal = false, splite = "_") =>
-        util.getDataType(setting, "object") &&
-        util.getDataType(setting.region, "string")
+    getRegion: (setting = false, defaultVal = false, splite = '_') =>
+        util.getDataType(setting, 'object') && util.getDataType(setting.region, 'string')
             ? `${splite}${setting.region}`
             : defaultVal,
 
@@ -159,20 +143,20 @@ const util = {
         const getType = () => Object.prototype.toString.call(data);
 
         switch (type) {
-            case "object":
-                result = getType() === "[object Object]";
+            case 'object':
+                result = getType() === '[object Object]';
                 break;
-            case "string":
-                result = getType() === "[object String]";
+            case 'string':
+                result = getType() === '[object String]';
                 break;
-            case "array":
-                result = getType() === "[object Array]";
+            case 'array':
+                result = getType() === '[object Array]';
                 break;
-            case "function":
-                result = getType() === "[object Function]";
+            case 'function':
+                result = getType() === '[object Function]';
                 break;
-            case "undefined":
-                result = getType() === "[object Undefined]";
+            case 'undefined':
+                result = getType() === '[object Undefined]';
                 break;
         }
 
@@ -180,24 +164,24 @@ const util = {
     },
 
     getTimeNow: () => {
-        return moment(new Date().getTime()).format("YYYY-MM-DD HH:mm:ss");
+        return moment(new Date().getTime()).format('YYYY-MM-DD HH:mm:ss');
     },
 
     repeatStr: (str, length) => {
-        return new Array(length).fill(str).join("");
+        return new Array(length).fill(str).join('');
     },
 
     cutline: (str, color) => {
-        color = !color ? "green" : color;
+        color = !color ? 'green' : color;
 
-        let cut = util.repeatStr("=", 60);
+        let cut = util.repeatStr('=', 60);
 
-        [cut, ` ${str}`, cut, "\n"].forEach((temp) => log[color](temp));
+        [cut, ` ${str}`, cut, '\n'].forEach((temp) => log[color](temp));
     },
 
     parseObjField: (key, obj) => {
         let locale = obj;
-        const paths = key.split(".");
+        const paths = key.split('.');
         const deplength = paths.length;
         let index = 0;
 
@@ -211,12 +195,8 @@ const util = {
     sortArrByName: (arr, field) => {
         arr.sort((a, b) => {
             let [nameA, nameB] = [
-                field
-                    ? util.parseObjField(field, a).toUpperCase()
-                    : a.toUpperCase(),
-                field
-                    ? util.parseObjField(field, b).toUpperCase()
-                    : b.toUpperCase()
+                field ? util.parseObjField(field, a).toUpperCase() : a.toUpperCase(),
+                field ? util.parseObjField(field, b).toUpperCase() : b.toUpperCase()
             ];
 
             if (nameA < nameB) {
@@ -235,17 +215,13 @@ const util = {
     output: {
         json: async (path, data, async = false, successCall = null) => {
             if (async) {
-                await fs.writeFile(
-                    `${path}`,
-                    JSON.stringify(data, null, 4),
-                    (err) => {
-                        if (err) throw err;
+                await fs.writeFile(`${path}`, JSON.stringify(data, null, 4), (err) => {
+                    if (err) throw err;
 
-                        if (successCall) {
-                            successCall();
-                        }
+                    if (successCall) {
+                        successCall();
                     }
-                );
+                });
             } else {
                 fs.writeFileSync(`${path}`, JSON.stringify(data, null, 4));
             }
@@ -255,7 +231,7 @@ const util = {
             try {
                 data = JSON.stringify(data, null, 4);
             } catch (error) {
-                console.log("");
+                console.log('');
             }
 
             if (async) {
@@ -272,18 +248,13 @@ const util = {
         },
 
         config: (data) => {
-            util.output.json(
-                path.join(util.folder.getRoot(), "config.json"),
-                data
-            );
+            util.output.json(path.join(util.folder.getRoot(), 'config.json'), data);
         }
     },
 
     array: {
         includes: (data, target) => {
-            return (
-                Array.isArray(data) && data.length > 0 && data.includes(target)
-            );
+            return Array.isArray(data) && data.length > 0 && data.includes(target);
         }
     },
 
@@ -297,15 +268,17 @@ const util = {
     },
 
     getConfig: () => {
-        const program = require("commander");
+        const program = require('commander');
         program.parse(process.argv);
 
         const configPath = program.config
             ? path.normalize(program.config)
-            : path.join(process.cwd(), "serus-config.json");
+            : path.join(process.cwd(), 'serus-config.js');
 
         if (fs.existsSync(configPath)) {
-            return JSON.parse(fs.readFileSync(configPath));
+            // return JSON.parse(fs.readFileSync(configPath));
+            console.log(require(configPath));
+            return require(configPath);
         } else {
             log.red(`无效配置路径！${configPath}`, true);
             process.exit();
@@ -327,7 +300,8 @@ const util = {
                 result = Object.assign({}, result, {
                     folder: folder,
                     filePath: filePath,
-                    config: JSON.parse(fs.readFileSync(filePath))
+                    // config: JSON.parse(fs.readFileSync(filePath))
+                    config: require(filePath)
                 });
                 break;
             }
@@ -345,30 +319,26 @@ const util = {
     },
 
     openBrowser(url) {
-        var exec = require("child_process").exec;
+        var exec = require('child_process').exec;
         switch (process.platform) {
-            case "darwin":
-                exec("open " + url);
+            case 'darwin':
+                exec('open ' + url);
                 break;
-            case "win32":
-                exec("start " + url);
+            case 'win32':
+                exec('start ' + url);
                 break;
             default:
-                exec("xdg-open", [url]);
+                exec('xdg-open', [url]);
         }
     },
 
     getLocalIp() {
-        let IPAdress = "";
+        let IPAdress = '';
         for (var devName in interfaces) {
             var iface = interfaces[devName];
             for (var i = 0; i < iface.length; i++) {
                 var alias = iface[i];
-                if (
-                    alias.family === "IPv4" &&
-                    alias.address !== "127.0.0.1" &&
-                    !alias.internal
-                ) {
+                if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
                     IPAdress = alias.address;
                 }
             }
